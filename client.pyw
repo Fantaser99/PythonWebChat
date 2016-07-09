@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import datetime
 import time
+import socket
 from multiprocessing.dummy import Pool
 
 def setStatus(text):
@@ -25,8 +26,20 @@ def receiveMessages():
     start = time.time()
 
 def sendMessage(*args):
+    global conn
+    
     message = getText()
     addToLog(message)  # Temporary.
+    print(message.encode("utf-8"))
+    
+    conn.connect(("localhost", 14000))
+    conn.send(message.encode("utf-8"))
+    
+    data = conn.recv(1024)
+    addToLog(data.decode("utf-8"))
+             
+    conn.close()
+    
     return
 
 def getText(*args):
@@ -39,6 +52,8 @@ pool = Pool(15)
 root = Tk()
 root.wm_title("Python Chat")
 root.protocol("WM_DELETE_WINDOW", on_closing)
+
+conn = socket.socket()
 
 WIDTH = 15  # Divisible by 15.
 

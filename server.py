@@ -1,9 +1,11 @@
 import socket
 
 sock = socket.socket()
-sock.bind(("", 14090))
+sock.bind(("", 14000))
 
-sock.listen(1000)
+sock.listen(100)
+
+print("Server IP: " + socket.gethostbyname(socket.gethostname()))
 
 while True:
     conn, addr = sock.accept()
@@ -12,4 +14,8 @@ while True:
     
     print("Received a message:\n>" + addr[0] + "\n>" + data.decode("utf-8"))
     
+    conn.send(b'Success')
+    
     conn.close()
+    
+    print()
