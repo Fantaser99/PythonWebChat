@@ -9,7 +9,7 @@ def setStatus(text):
     statusbar.config(text=str(text))
 
 def addToLog(text):
-    log.insert(END, text + "\n")
+    log.insert(END, str(text) + "\n")
 
 def update():
     time.sleep(1 / 60)
@@ -35,11 +35,9 @@ def sendMessage(message):
     
     return
 
+#COMMANDS--------------------------------------------------------------COMMANDS#
 def checkCommand(*args):
-    command_list = {
-        "connect":setServerIp
-        }
-    text = getText()
+    text = getText() + "  "
     if len(text) != 0 and text[0] == '/':
         command = text[1:text.index(" ")]
         value   = text[text.index(" ") + 1:]
@@ -63,6 +61,22 @@ def setServerIp(ip):
     except:
         addToLog("Connection failed!")
     conn.close()
+
+def spam(count):
+    for i in range(int(count)):
+        addToLog(i)
+
+def commandList(*args):
+    addToLog("Avaliable commands: ")
+    for cmd in command_list.keys():
+        addToLog("  /" + cmd)
+        
+command_list = {
+    "connect"      : setServerIp,
+    "spam"         : spam,
+    "command_list" : commandList
+    }
+#COMMANDS_END------------------------------------------------------COMMANDS_END#
 
 def getText(*args):
     text = message_entry.get()
@@ -90,7 +104,7 @@ users = Listbox(root)
 users.grid(row=0, column=WIDTH // 15 * 14, columnspan=WIDTH // 15, 
                                                 sticky=N+S+W+E, padx=1, pady=1)
 for i in range(5):
-    users.insert(END, "User #-" + str(i))
+    users.insert(END, "User #" + str(i))
 
 message_entry = Entry(root)
 message_entry.bind("<Return>", checkCommand)
