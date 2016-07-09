@@ -49,8 +49,17 @@ def sendMessage(message):
     conn.connect((server_ip, server_port))
     conn.send(("1" + username + "> " + message).encode("utf-8"))             
     conn.close()
-    
     return
+
+def checkServer(ip, port, timeout=999):
+    try:
+        conn = socket.socket()
+        conn.settimeout(timeout)
+        conn.connect((ip, port))
+        conn.close()
+    except:
+        return False
+    return True
 
 #COMMANDS--------------------------------------------------------------COMMANDS#
 def checkCommand(*args):
@@ -70,12 +79,14 @@ def checkCommand(*args):
 def connectToServer(addr):
     global server_ip
     global server_port
+    global server_name
     global is_connected
     if username == 'None':
         addToLog("System> Set a username first! (/set_username)")
         return
     if ":" not in addr: 
-        addr += ":25565"
+        addr += ":" + str(server_port)
+    addr = addr.replace(' ', '')
     ip = addr.split(":")
     server_ip = ip[0]
     server_port = int(ip[1])
@@ -89,7 +100,8 @@ def connectToServer(addr):
         elif data == "Ban":
             addToLog("Server> Your IP was banned from this server.")
         else:
-            addToLog("Server> " + "Connected to " + data.decode("utf-8"))
+            server_name = data.decode("utf-8")
+            addToLog("Server> " + "Connected to " + server_name + ".")
             is_connected = True
     except:
         addToLog("System> Connection failed!")
@@ -127,30 +139,80 @@ def setUsername(new_username):
     with open("config.ini", 'w') as fout: config.write(fout)
     fout.close()
 
-def scanServers(*args):
+def scanServers(timeout):
+    global saved_servers
+    global config
+    global stop_scan
+    stop_scan = False
     self_ip = socket.gethostbyname(socket.gethostname()).split('.')
     addToLog("System> Scaning the network for avaliable servers...")
+    addToLog("System> You can see the progress in the status bar below.")
     update()
-    for i in range(255):
-        self_ip[-1] = str(i)
+    
+    progress_str = list("[=========================], Done: ")
+    i = -1
+    for s in saved_servers:
+        i += 1
+        prc = round(i / len(saved_servers) * 100)
+        progress_str[1:round(prc / 100 * 25) + 1] = "#" * round(prc / 100 * 25)
+        setStatus("Scaning saved servers: " + 
+                  ''.join(progress_str) + str(s) + " (" + str(prc) + "%)")        
+        self_ip[-1] = str(s)
         str_ip = '.'.join(self_ip)
         try:
             conn = socket.socket()
-            conn.settimeout(0.01)
+            conn.settimeout(float(timeout))
             conn.connect((str_ip, server_port))
             conn.send(b'0')
             addToLog("  " + str_ip + " - " + conn.recv(4096).decode("utf-8"))
             conn.close()
-            update()
+        except:
+            pass     
+        update()
+    progress_str = list("[=========================], Done: ")
+    found_server = False    
+    for s in range(256):
+        if stop_scan: 
+            addToLog("System> Stopped.")
+            break
+        if s in saved_servers: continue
+        prc = round(s / 255 * 100)
+        progress_str[round(prc / 100 * 25) + 1] = "#"
+        setStatus("Scaning the network: " + 
+                  ''.join(progress_str) + str(s) + " (" + str(prc) + "%)")
+        
+        self_ip[-1] = str(s)
+        str_ip = '.'.join(self_ip)
+        try:
+            conn = socket.socket()
+            conn.settimeout(float(timeout))
+            conn.connect((str_ip, server_port))
+            conn.send(b'0')
+            addToLog("  " + str_ip + " - " + conn.recv(4096).decode("utf-8"))
+            conn.close()
+            if i not in saved_servers:
+                saved_servers.add(i)
+                found_server = True
         except:
             pass
+        if found_server:
+            u_list = list(saved_servers)
+            config['SAVED DATA']['saved_servers'] = json.dumps(u_list)
+            with open("config.ini", 'w') as fout: config.write(fout)
+            fout.close()
+        update()      
+
+def stopScan(*args):
+    global stop_scan
+    stop_scan = True
         
 command_list = {
     "connect"      : connectToServer,
     "disconnect"   : disconnect,
     "command_list" : commandList,
     "set_username" : setUsername,
-    "scan_servers" : scanServers
+    "scan_servers" : scanServers,
+    "stop_scan"    : stopScan
     }
 #COMMANDS_END------------------------------------------------------COMMANDS_END#
 
@@ -165,9 +227,12 @@ config.read('config.ini')
 
 server_ip = "localhost"
 server_port = int(config['DEFAULT']['default_port'])
+server_name = ""
 is_connected = False
 last_idx = -1
 username = config['DEFAULT']['username']
+stop_scan = False  # If it is true, the server scaning will stop.
+saved_servers = set(json.loads(config['SAVED DATA']['saved_servers']))
  
 welcome_message = '''  Welcome to Fullmetal Chat v0.0!
   Type /connect [ip]:[port] to connect to a chat room.
@@ -180,7 +245,12 @@ start = time.time()
 WINDOW_EXISTS = True  # For the correct turn-off.
 while WINDOW_EXISTS:  # Mainloop.
     updateData()
-    setStatus("Ping: " + str(int((time.time() - start) * 1000)) + " ms.")
+    if is_connected:
+        setStatus("Connected to " + server_name + " (" + server_ip + ":" + 
+                  str(server_port) + ")  Ping: " + 
+                  str(int((time.time() - start) * 1000)) + " ms.")
+    else:
+        setStatus("Not connected")
     update()
 
 # root.mainloop() doesn't work, so we need to update the window
