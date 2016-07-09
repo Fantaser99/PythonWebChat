@@ -4,6 +4,7 @@ import time
 import socket
 import json
 from gui import *
+import configparser
 
 
 def onClosing():
@@ -70,7 +71,7 @@ def connectToServer(addr):
     global server_ip
     global server_port
     global is_connected
-    if not username:
+    if username == 'None':
         addToLog("System> Set a username first! (/set_username)")
         return
     if ":" not in addr: 
@@ -116,11 +117,15 @@ def commandList(*args):
 
 def setUsername(new_username):
     global username
+    global config
     if is_connected:
         addToLog("System> Disconnect first!")
         return
     addToLog("System> Username set: " + new_username)
     username = new_username[:-2]
+    config['DEFAULT']['username'] = username
+    with open("config.ini", 'w') as fout: config.write(fout)
+    fout.close()
         
 command_list = {
     "connect"      : connectToServer,
@@ -136,15 +141,19 @@ root.protocol("WM_DELETE_WINDOW", onClosing)
 message_field.bind("<Return>", checkCommand)
 message_button.config(command=checkCommand)
 
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 server_ip = "localhost"
-server_port = 14000
+server_port = int(config['DEFAULT']['default_port'])
 is_connected = False
 last_idx = -1
-username = None
-
-welcome_message = '''Welcome to Fullmetal Chat v0.0!
-Type /connect [ip]:[port] to connect to a chat room.
+username = config['DEFAULT']['username']
+ 
+welcome_message = '''  Welcome to Fullmetal Chat v0.0!
+  Type /connect [ip]:[port] to connect to a chat room.
 '''
+if username != 'None': welcome_message = username + ',\n' + welcome_message
 log.insert(END, welcome_message) 
 users.insert(END, "Not connected")
 
