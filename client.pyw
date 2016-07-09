@@ -18,11 +18,17 @@ def update():
 
 def on_closing():
     global WINDOW_EXISTS
-    if messagebox.askokcancel("Quit", "Do you want to quit?"):
+    if True or messagebox.askokcancel("Quit", "Do you want to quit?"):
+        disconnect()
         root.destroy()
         WINDOW_EXISTS = False  # For the correct turn-off
+        
+def updateUsers(active_users):
+    global users
+    users.delete(0, END)
+    for user in active_users: users.insert(END, user)
 
-def receiveMessages():
+def updateData():
     global start
     global is_connected
     global last_idx
@@ -33,11 +39,13 @@ def receiveMessages():
         conn = socket.socket()
         conn.connect((server_ip, server_port))
         conn.send(("2" + str(last_idx)).encode("utf-8"))
-        data = conn.recv(16384).decode("utf-8")
+        data = json.loads(conn.recv(16384).decode("utf-8"))
         conn.close()
-        new_messages = json.loads(data)
+        new_messages = data[0]
+        active_users = data[1]
         last_idx += len(new_messages)
         for msg in new_messages: addToLog(msg)       
+        updateUsers(active_users)        
     except:
         is_connected = False
         addToLog("System> You were disconnected.")
@@ -72,6 +80,9 @@ def connectToServer(addr):
     global server_ip
     global server_port
     global is_connected
+    if not username:
+        addToLog("System> Set a username first! (/set_username)")
+        return
     if ":" not in addr: 
         addToLog("System> You forgot about the port!")
         return
@@ -85,16 +96,29 @@ def connectToServer(addr):
         data = conn.recv(1024)
         if not data:
             addToLog("System> Connection failed!")
+        elif data == "Ban":
+            addToLog("Server> Your IP was banned from this server.")
         else:
-            addToLog(data.decode("utf-8"))
+            addToLog("Server> " + data.decode("utf-8"))
             is_connected = True
     except:
         addToLog("System> Connection failed!")
     conn.close()
 
-def spam(count):
-    for i in range(int(count)):
-        addToLog(i)
+def disconnect(*args):
+    global is_connected
+    global users
+    conn = socket.socket()
+    conn.connect((server_ip, server_port))
+    conn.send(("3" + username).encode("utf-8"))
+    if conn.recv(1024).decode("utf-8") == "Disconnected":
+        addToLog("Server> Disconnected.")
+        is_connected = False
+    else:
+        addToLog("Server> Error.")
+    conn.close()
+    users.delete(0, END)
+    users.insert(END, "Not connected")
 
 def commandList(*args):
     addToLog("System> Avaliable commands: ")
@@ -103,12 +127,15 @@ def commandList(*args):
 
 def setUsername(new_username):
     global username
-    addToLog("System> Username changed: " + username + " -> " + new_username)
-    username = new_username
+    if is_connected:
+        addToLog("System> Disconnect first!")
+        return
+    addToLog("System> Username set: " + new_username)
+    username = new_username[:-2]
         
 command_list = {
     "connect"      : connectToServer,
-    "spam"         : spam,
+    "disconnect"   : disconnect,
     "command_list" : commandList,
     "set_username" : setUsername
     }
@@ -130,7 +157,7 @@ server_ip = "localhost"
 server_port = 14000
 is_connected = False
 last_idx = -1
-username = "Anonymous"
+username = None
 
 welcome_message = '''Welcome to Fullmetal Chat v0.0!
 Type /connect [ip]:[port] to connect to a chat room.
@@ -143,8 +170,7 @@ log.grid(row=0, column=0, columnspan=WIDTH // 15 * 14, padx=1, pady=1)
 users = Listbox(root)
 users.grid(row=0, column=WIDTH // 15 * 14, columnspan=WIDTH // 15, 
                                                 sticky=N+S+W+E, padx=1, pady=1)
-for i in range(5):
-    users.insert(END, "User #" + str(i))
+users.insert(END, "Not connected")
 
 message_entry = Entry(root)
 message_entry.bind("<Return>", checkCommand)
@@ -162,7 +188,7 @@ statusbar.grid(sticky=E+W, columnspan=WIDTH, pady=(2, 0))
 start = time.time()
 WINDOW_EXISTS = True  # For the correct turn-off.
 while WINDOW_EXISTS:  # Mainloop.
-    receiveMessages()
+    updateData()
     setStatus("Ping: " + str(int((time.time() - start) * 1000)) + " ms.")
     update()
 
