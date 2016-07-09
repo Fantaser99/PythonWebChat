@@ -1,10 +1,10 @@
 from tkinter import *
-from tkinter import messagebox
 import datetime
 import time
 import socket
-from multiprocessing.dummy import Pool
 import json
+from gui import *
+
 
 def setStatus(text):
     statusbar.config(text=str(text))
@@ -19,7 +19,7 @@ def update():
 def on_closing():
     global WINDOW_EXISTS
     if True or messagebox.askokcancel("Quit", "Do you want to quit?"):
-        disconnect()
+        if is_connected: disconnect()
         root.destroy()
         WINDOW_EXISTS = False  # For the correct turn-off
         
@@ -141,18 +141,12 @@ command_list = {
     }
 #COMMANDS_END------------------------------------------------------COMMANDS_END#
 
-def getText(*args):
-    text = message_entry.get()
-    message_entry.delete(0, END)
-    return text
 
-pool = Pool(15)
-
-root = Tk()
 root.wm_title("Python Chat")
 root.protocol("WM_DELETE_WINDOW", on_closing)
+message_field.bind("<Return>", checkCommand)
+message_button.config(command=checkCommand)
 
-WIDTH = 15  # Divisible by 15.
 server_ip = "localhost"
 server_port = 14000
 is_connected = False
@@ -162,28 +156,8 @@ username = None
 welcome_message = '''Welcome to Fullmetal Chat v0.0!
 Type /connect [ip]:[port] to connect to a chat room.
 '''
-
-log = Text(root)
 log.insert(END, welcome_message)  # Welcome message.
-log.grid(row=0, column=0, columnspan=WIDTH // 15 * 14, padx=1, pady=1)
-
-users = Listbox(root)
-users.grid(row=0, column=WIDTH // 15 * 14, columnspan=WIDTH // 15, 
-                                                sticky=N+S+W+E, padx=1, pady=1)
 users.insert(END, "Not connected")
-
-message_entry = Entry(root)
-message_entry.bind("<Return>", checkCommand)
-message_entry.grid(row=1, sticky=N+S+E+W, padx=1, pady=2, 
-                                                   columnspan=WIDTH // 15 * 14)
-
-message_button = Button(root, command=checkCommand, text="Send")
-message_button.grid(row=1, sticky=E+W+S+N, padx=1, pady=2, 
-                               columnspan=WIDTH // 15, column=WIDTH // 15 * 14)
-
-statusbar = Label(root, text="Nothing happened", border=1, 
-                                                        relief=RIDGE, anchor=W)
-statusbar.grid(sticky=E+W, columnspan=WIDTH, pady=(2, 0))
 
 start = time.time()
 WINDOW_EXISTS = True  # For the correct turn-off.
