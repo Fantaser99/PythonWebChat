@@ -40,15 +40,15 @@ def receiveMessages():
         for msg in new_messages: addToLog(msg)       
     except:
         is_connected = False
-        addToLog("You were disconnected.")
+        addToLog("System> You were disconnected.")
 
 def sendMessage(message):    
     if not is_connected:
-        addToLog("Connect to a server first!")
+        addToLog("System> Connect to a server first!")
         return
     conn = socket.socket()
     conn.connect((server_ip, server_port))
-    conn.send(("1" + message).encode("utf-8"))             
+    conn.send(("1" + username + "> " + message).encode("utf-8"))             
     conn.close()
     
     return
@@ -59,6 +59,10 @@ def checkCommand(*args):
     if len(text) != 0 and text[0] == '/':
         command = text[1:text.index(" ")]
         value   = text[text.index(" ") + 1:]
+        if command not in command_list.keys():
+            addToLog("System> Unknown command. Type /command_list to see" +
+                                    " avaliable commands.")
+            return
         command_list[command](value)        
         
     else:
@@ -69,7 +73,7 @@ def connectToServer(addr):
     global server_port
     global is_connected
     if ":" not in addr: 
-        addToLog("You forgot about the port!")
+        addToLog("System> You forgot about the port!")
         return
     ip = addr.split(":")
     server_ip = ip[0]
@@ -77,15 +81,15 @@ def connectToServer(addr):
     try:
         conn = socket.socket()
         conn.connect((server_ip, server_port))
-        conn.send(b'0Connection_check')
+        conn.send(("0" + username).encode("utf-8"))
         data = conn.recv(1024)
         if not data:
-            addToLog("Connection failed!")
+            addToLog("System> Connection failed!")
         else:
             addToLog(data.decode("utf-8"))
             is_connected = True
     except:
-        addToLog("Connection failed!")
+        addToLog("System> Connection failed!")
     conn.close()
 
 def spam(count):
@@ -93,14 +97,20 @@ def spam(count):
         addToLog(i)
 
 def commandList(*args):
-    addToLog("Avaliable commands: ")
+    addToLog("System> Avaliable commands: ")
     for cmd in command_list.keys():
-        addToLog("  /" + cmd)
+        addToLog("System>  /" + cmd)
+
+def setUsername(new_username):
+    global username
+    addToLog("System> Username changed: " + username + " -> " + new_username)
+    username = new_username
         
 command_list = {
     "connect"      : connectToServer,
     "spam"         : spam,
-    "command_list" : commandList
+    "command_list" : commandList,
+    "set_username" : setUsername
     }
 #COMMANDS_END------------------------------------------------------COMMANDS_END#
 
@@ -120,9 +130,10 @@ server_ip = "localhost"
 server_port = 14000
 is_connected = False
 last_idx = -1
+username = "Anonymous"
 
 welcome_message = '''Welcome to Fullmetal Chat v0.0!
-Type /connect [ip] to connect to a chat room.
+Type /connect [ip]:[port] to connect to a chat room.
 '''
 
 log = Text(root)

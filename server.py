@@ -18,8 +18,9 @@ server_ip = socket.gethostbyname(socket.gethostname())
 print("Started server on " + server_ip + ":" + str(server_port) + "!")
 
 message_list = []
+user_list = []
 
-show_received_messages = True
+show_received_messages = False
 
 while True:
     conn, addr = sock.accept()
@@ -34,6 +35,9 @@ while True:
     elif data[0] == "0":
         conn.send(("Connected to " + server_ip + ":" + 
                    str(server_port) + "!").encode("utf-8"))
+        print("New user connected: \n      IP: " + addr[0] + "\nUsername: " + 
+                                                                 data[1:] + "\n")
+        user_list.append([data[1:], addr[0]])
     elif data[0] == "1":
         data = data[1:]
         if show_received_messages:
