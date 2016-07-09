@@ -51,11 +51,11 @@ def checkCommand(*args):
 def setServerIp(ip):
     global server_ip
     server_ip = ip
-    conn = socket.socket()
-    conn.connect((server_ip, 14000))
-    conn.send(b'0Connection_check')
-    data = conn.recv(1024)
     try:
+        conn = socket.socket()
+        conn.connect((server_ip, 14000))
+        conn.send(b'0Connection_check')
+        data = conn.recv(1024)
         if not data:
             addToLog("Connection failed!")
         else:
