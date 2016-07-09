@@ -29,7 +29,7 @@ def sendMessage(message):
     addToLog(message)  # Temporary.
     
     conn = socket.socket()
-    conn.connect(("localhost", 14000))
+    conn.connect((server_ip, 14000))
     conn.send(("1" + message).encode("utf-8"))             
     conn.close()
     
