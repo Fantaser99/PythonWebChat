@@ -32,6 +32,7 @@ def sendMessage(*args):
     addToLog(message)  # Temporary.
     print(message.encode("utf-8"))
     
+    conn = socket.socket()
     conn.connect(("localhost", 14000))
     conn.send(message.encode("utf-8"))
     
@@ -52,8 +53,6 @@ pool = Pool(15)
 root = Tk()
 root.wm_title("Python Chat")
 root.protocol("WM_DELETE_WINDOW", on_closing)
-
-conn = socket.socket()
 
 WIDTH = 15  # Divisible by 15.
 
