@@ -40,7 +40,7 @@ users = Listbox(root)
 users.grid(row=0, column=WIDTH // 15 * 14, columnspan=WIDTH // 15, 
                                                 sticky=N+S+W+E, padx=1, pady=1)
 for i in range(5):
-    users.insert(END, "User #–" + str(i))
+    users.insert(END, "User #-" + str(i))
 
 message_entry = Entry(root)
 message_entry.bind("<Return>", sendMessage)
