@@ -1,11 +1,17 @@
 import socket
 import json
 import os
+import configparser 
 
+
+config = configparser.ConfigParser()
+config.read("config.ini")
+server_port = int(config['DEFAULT']['default_port'])
+server_name = config['DEFAULT']['server_name']
 
 sock = socket.socket()
 try:
-    sock.bind(("", 25565))
+    sock.bind(("", server_port))
 except:
     print("Port is already used.")
     input()
@@ -13,7 +19,6 @@ except:
 
 sock.listen(100)
 
-server_port = 25565
 server_ip = socket.gethostbyname(socket.gethostname())
 print("Started server on " + server_ip + ":" + str(server_port) + "!")
 
@@ -22,6 +27,7 @@ user_list = []
 ban_list = []
 
 show_received_messages = False
+show_new_users         = False
 
 while True:
     conn, addr = sock.accept()
@@ -38,10 +44,12 @@ while True:
         if addr[0] in ban_list:
             conn.send("Ban")
         else:
-            conn.send(("Server name").encode("utf-8"))
-            #print("New user connected: \n      IP: " + addr[0] + "\nUsername: " + 
-            #                                                         data[1:] + "\n")
-            user_list.append(data[1:])
+            conn.send(server_name.encode("utf-8"))
+            if len(data) != 1:
+                user_list.append(data[1:])
+                if show_new_users:
+                    print("New user connected: \n      IP: " + addr[0] + 
+                                              "\nUsername: " + data[1:] + "\n")
     elif data[0] == "1":
         data = data[1:]
         if show_received_messages:

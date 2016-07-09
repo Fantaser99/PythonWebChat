@@ -126,12 +126,31 @@ def setUsername(new_username):
     config['DEFAULT']['username'] = username
     with open("config.ini", 'w') as fout: config.write(fout)
     fout.close()
+
+def scanServers(*args):
+    self_ip = socket.gethostbyname(socket.gethostname()).split('.')
+    addToLog("System> Scaning the network for avaliable servers...")
+    update()
+    for i in range(255):
+        self_ip[-1] = str(i)
+        str_ip = '.'.join(self_ip)
+        try:
+            conn = socket.socket()
+            conn.settimeout(0.01)
+            conn.connect((str_ip, server_port))
+            conn.send(b'0')
+            addToLog("  " + str_ip + " - " + conn.recv(4096).decode("utf-8"))
+            conn.close()
+            update()
+        except:
+            pass
         
 command_list = {
     "connect"      : connectToServer,
     "disconnect"   : disconnect,
     "command_list" : commandList,
-    "set_username" : setUsername
+    "set_username" : setUsername,
+    "scan_servers" : scanServers
     }
 #COMMANDS_END------------------------------------------------------COMMANDS_END#
 
