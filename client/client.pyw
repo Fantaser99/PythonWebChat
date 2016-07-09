@@ -6,17 +6,7 @@ import json
 from gui import *
 
 
-def setStatus(text):
-    statusbar.config(text=str(text))
-
-def addToLog(text):
-    log.insert(END, str(text) + "\n")
-
-def update():
-    time.sleep(1 / 60)
-    root.update()
-
-def on_closing():
+def onClosing():
     global WINDOW_EXISTS
     if True or messagebox.askokcancel("Quit", "Do you want to quit?"):
         if is_connected: disconnect()
@@ -84,8 +74,7 @@ def connectToServer(addr):
         addToLog("System> Set a username first! (/set_username)")
         return
     if ":" not in addr: 
-        addToLog("System> You forgot about the port!")
-        return
+        addr += ":25565"
     ip = addr.split(":")
     server_ip = ip[0]
     server_port = int(ip[1])
@@ -99,7 +88,7 @@ def connectToServer(addr):
         elif data == "Ban":
             addToLog("Server> Your IP was banned from this server.")
         else:
-            addToLog("Server> " + data.decode("utf-8"))
+            addToLog("Server> " + "Connected to " + data.decode("utf-8"))
             is_connected = True
     except:
         addToLog("System> Connection failed!")
@@ -143,7 +132,7 @@ command_list = {
 
 
 root.wm_title("Python Chat")
-root.protocol("WM_DELETE_WINDOW", on_closing)
+root.protocol("WM_DELETE_WINDOW", onClosing)
 message_field.bind("<Return>", checkCommand)
 message_button.config(command=checkCommand)
 
@@ -156,7 +145,7 @@ username = None
 welcome_message = '''Welcome to Fullmetal Chat v0.0!
 Type /connect [ip]:[port] to connect to a chat room.
 '''
-log.insert(END, welcome_message)  # Welcome message.
+log.insert(END, welcome_message) 
 users.insert(END, "Not connected")
 
 start = time.time()

@@ -3,11 +3,9 @@ import json
 import os
 
 
-server_port = int(input("Server port: "))
-
 sock = socket.socket()
 try:
-    sock.bind(("", server_port))
+    sock.bind(("", 25565))
 except:
     print("Port is already used.")
     input()
@@ -15,6 +13,7 @@ except:
 
 sock.listen(100)
 
+server_port = 25565
 server_ip = socket.gethostbyname(socket.gethostname())
 print("Started server on " + server_ip + ":" + str(server_port) + "!")
 
@@ -39,10 +38,9 @@ while True:
         if addr[0] in ban_list:
             conn.send("Ban")
         else:
-            conn.send(("Connected to " + server_ip + ":" + 
-                       str(server_port) + "!").encode("utf-8"))
-            print("New user connected: \n      IP: " + addr[0] + "\nUsername: " + 
-                                                                     data[1:] + "\n")
+            conn.send(("Server name").encode("utf-8"))
+            #print("New user connected: \n      IP: " + addr[0] + "\nUsername: " + 
+            #                                                         data[1:] + "\n")
             user_list.append(data[1:])
     elif data[0] == "1":
         data = data[1:]

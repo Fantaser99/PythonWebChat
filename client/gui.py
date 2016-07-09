@@ -2,6 +2,9 @@ from tkinter import *
 import time
 
 
+def setStatus(text):
+    statusbar.config(text=str(text))
+    
 def addToLog(text):
     log.insert(END, str(text) + "\n")
 
