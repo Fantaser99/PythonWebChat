@@ -7,6 +7,9 @@ from multiprocessing.dummy import Pool
 def setStatus(text):
     statusbar.config(text=str(text))
 
+def addToLog(text):
+    log.insert(END, text + "\n")
+
 def update():
     time.sleep(1 / 60)
     root.update()
@@ -17,12 +20,19 @@ def on_closing():
         root.destroy()
         WINDOW_EXISTS = False  # For the correct turn-off
 
-def receiveMessage():
+def receiveMessages():
     global start
     start = time.time()
 
 def sendMessage(*args):
+    message = getText()
+    addToLog(message)  # Temporary.
     return
+
+def getText(*args):
+    text = message_entry.get()
+    message_entry.delete(0, END)
+    return text
 
 pool = Pool(15)
 
@@ -33,7 +43,7 @@ root.protocol("WM_DELETE_WINDOW", on_closing)
 WIDTH = 15  # Divisible by 15.
 
 log = Text(root)
-log.insert(END, '''Welcome to Fullmetal Chat v0.0!''')  # Welcome message.
+log.insert(END, '''Welcome to Fullmetal Chat v0.0!\n''')  # Welcome message.
 log.grid(row=0, column=0, columnspan=WIDTH // 15 * 14, padx=1, pady=1)
 
 users = Listbox(root)
