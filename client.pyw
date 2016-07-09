@@ -4,6 +4,7 @@ import datetime
 import time
 import socket
 from multiprocessing.dummy import Pool
+import json
 
 def setStatus(text):
     statusbar.config(text=str(text))
@@ -23,13 +24,30 @@ def on_closing():
 
 def receiveMessages():
     global start
+    global is_connected
+    global last_idx
     start = time.time()
+    if not is_connected:
+        return
+    try:
+        conn = socket.socket()
+        conn.connect((server_ip, server_port))
+        conn.send(("2" + str(last_idx)).encode("utf-8"))
+        data = conn.recv(16384).decode("utf-8")
+        conn.close()
+        new_messages = json.loads(data)
+        last_idx += len(new_messages)
+        for msg in new_messages: addToLog(msg)       
+    except:
+        is_connected = False
+        addToLog("You were disconnected.")
 
-def sendMessage(message):
-    addToLog(message)  # Temporary.
-    
+def sendMessage(message):    
+    if not is_connected:
+        addToLog("Connect to a server first!")
+        return
     conn = socket.socket()
-    conn.connect((server_ip, 14000))
+    conn.connect((server_ip, server_port))
     conn.send(("1" + message).encode("utf-8"))             
     conn.close()
     
@@ -46,18 +64,26 @@ def checkCommand(*args):
     else:
         sendMessage(text)
 
-def setServerIp(ip):
+def connectToServer(addr):
     global server_ip
-    server_ip = ip
+    global server_port
+    global is_connected
+    if ":" not in addr: 
+        addToLog("You forgot about the port!")
+        return
+    ip = addr.split(":")
+    server_ip = ip[0]
+    server_port = int(ip[1])
     try:
         conn = socket.socket()
-        conn.connect((server_ip, 14000))
+        conn.connect((server_ip, server_port))
         conn.send(b'0Connection_check')
         data = conn.recv(1024)
         if not data:
             addToLog("Connection failed!")
         else:
             addToLog(data.decode("utf-8"))
+            is_connected = True
     except:
         addToLog("Connection failed!")
     conn.close()
@@ -72,7 +98,7 @@ def commandList(*args):
         addToLog("  /" + cmd)
         
 command_list = {
-    "connect"      : setServerIp,
+    "connect"      : connectToServer,
     "spam"         : spam,
     "command_list" : commandList
     }
@@ -91,6 +117,9 @@ root.protocol("WM_DELETE_WINDOW", on_closing)
 
 WIDTH = 15  # Divisible by 15.
 server_ip = "localhost"
+server_port = 14000
+is_connected = False
+last_idx = -1
 
 welcome_message = '''Welcome to Fullmetal Chat v0.0!
 Type /connect [ip] to connect to a chat room.
@@ -122,6 +151,7 @@ statusbar.grid(sticky=E+W, columnspan=WIDTH, pady=(2, 0))
 start = time.time()
 WINDOW_EXISTS = True  # For the correct turn-off.
 while WINDOW_EXISTS:  # Mainloop.
+    receiveMessages()
     setStatus("Ping: " + str(int((time.time() - start) * 1000)) + " ms.")
     update()
 
