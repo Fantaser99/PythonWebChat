@@ -16,8 +16,8 @@ class CustomText(Text):
     def __init__(self, *args, **kwargs):
         Text.__init__(self, *args, **kwargs)
 
-    def addColorTag(self, name, foreground, background="white"):
-        log.tag_config(name, foreground=foreground, background=background)    
+    def addColorTag(self, name, foreground):
+        log.tag_config(name, foreground=foreground)    
     
     def highlightPattern(self, pattern, tag, start="1.0", end="end",
                           regexp=False):
