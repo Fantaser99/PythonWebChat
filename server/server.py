@@ -27,43 +27,35 @@ user_list = []
 ban_list = []
 
 show_received_messages = False
-show_new_users         = False
+show_new_users         = True
 
 while True:
     conn, addr = sock.accept()
     
-    # On the first symbol of the received data there is always a number,
-    # which tells the server, what it will receive:
-    # 0 - connection check
-    # 1 - message 
-    # 2 - index of the last client's message
-    # 3 - disconnection
-    data = conn.recv(16384).decode("utf-8")
-    if len(data) == 0: pass
-    elif data[0] == "0":
-        if addr[0] in ban_list:
-            conn.send("Ban")
-        else:
-            conn.send(server_name.encode("utf-8"))
-            if len(data) != 1:
-                user_list.append(data[1:])
-                if show_new_users:
-                    print("New user connected: \n      IP: " + addr[0] + 
-                                              "\nUsername: " + data[1:] + "\n")
-    elif data[0] == "1":
-        data = data[1:]
+    # All data, that this server receives, consists of a command and a value.
+    # A command tells the server, what the client is sending and what he wants
+    # to receive, and the value - is the main information (last_idx, msg, etc.)
+    command, value = json.loads(conn.recv(16384).decode("utf-8"))
+    
+    if command == "check_connection":
+        conn.send(server_name.encode("utf-8"))
+        if value:
+            user_list.append(value)
+            if show_new_users:
+                print("New user connected: \n      IP: " + addr[0] + 
+                                            "\nUsername: " + value + "\n")
+    elif command == "send_message":
         if show_received_messages:
-            print("Received a message:\n>" + addr[0] + "\n>" + data + "\n")
-        message_list.append(data)
-    elif data[0] == "2":
-        last_idx = int(data[1:])
+            print("Received a message:\n>" + addr[0] + "\n>" + value + "\n")
+        message_list.append(value)
+    elif command == "update_data":
+        last_idx = int(value)
         messages_to_send = []
         if last_idx < len(message_list):
             messages_to_send = message_list[last_idx + 1:]
         send_data = [messages_to_send, user_list]
         conn.send(json.dumps(send_data).encode("utf-8"))
-    elif data[0] == "3":
-        if data[1:] in user_list: user_list.pop(user_list.index(data[1:]))
-        conn.send(b'Disconnected')
+    elif command == "disconnect":
+        if value in user_list: user_list.pop(user_list.index(value))
     
     conn.close()

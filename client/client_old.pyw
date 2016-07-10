@@ -1,9 +1,9 @@
 from tkinter import *
-from gui import *
 import datetime
 import time
 import socket
 import json
+from gui import *
 import configparser
 
 
@@ -19,35 +19,25 @@ def updateUsers(active_users):
     users.delete(0, END)
     for user in active_users: users.insert(END, user)
 
-def updateMessages(new_messages):
-    for msg in new_messages: 
-        addToLog(msg)   
-    # TODO: nickname coloring
-
 def updateData():
-    global last_connection
+    global start
     global is_connected
     global last_idx
-    last_connection = time.time()
+    start = time.time()
     if not is_connected:
         return
-    try:  # Checking, if the client can get response from the server.
+    try:
         conn = socket.socket()
         conn.connect((server_ip, server_port))
-        
-        send_data = ["update_data", last_idx]
-        conn.send(json.dumps(send_data).encode("utf-8"))
-        
-        rec_data = json.loads(conn.recv(16384).decode("utf-8"))
+        conn.send(("2" + str(last_idx)).encode("utf-8"))
+        data = json.loads(conn.recv(16384).decode("utf-8"))
         conn.close()
-        
-        new_messages = rec_data[0]
-        active_users = rec_data[1]
+        new_messages = data[0]
+        active_users = data[1]
         last_idx += len(new_messages)
-        
-        updateUsers(active_users)         
-        updateMessages(new_messages)       
-    except:  # If he can't, he disconnects.
+        for msg in new_messages: addToLog(msg)       
+        updateUsers(active_users)        
+    except:
         is_connected = False
         addToLog("System> You were disconnected.")
 
@@ -57,27 +47,24 @@ def sendMessage(message):
         return
     conn = socket.socket()
     conn.connect((server_ip, server_port))
-    send_data = ["send_message", username + "> " + message]
-    conn.send(json.dumps(send_data).encode("utf-8"))             
+    conn.send(("1" + username + "> " + message).encode("utf-8"))             
     conn.close()
     return
 
-def checkServer(addr, value='', timeout=999):
+def checkServer(ip, port, timeout=999):
     try:
         conn = socket.socket()
         conn.settimeout(timeout)
-        conn.connect(addr)
-        conn.send(json.dumps(["check_connection", value]).encode("utf-8"))
-        response = conn.recv(4096)
+        conn.connect((ip, port))
         conn.close()
-        return response
     except:
         return False
+    return True
 
 #COMMANDS--------------------------------------------------------------COMMANDS#
 def checkCommand(*args):
     text = getText() + "  "
-    if text[0] == '/':
+    if len(text) != 0 and text[0] == '/':
         command = text[1:text.index(" ")]
         value   = text[text.index(" ") + 1:]
         if command not in command_list.keys():
@@ -94,7 +81,7 @@ def connectToServer(addr):
     global server_port
     global server_name
     global is_connected
-    if not username:
+    if username == 'None':
         addToLog("System> Set a username first! (/set_username)")
         return
     if ":" not in addr: 
@@ -103,33 +90,42 @@ def connectToServer(addr):
     ip = addr.split(":")
     server_ip = ip[0]
     server_port = int(ip[1])
-    response = checkServer((server_ip, server_port), username)
-    if response:
-        is_connected = True
-        server_name = response.decode("utf-8")
-        addToLog("System> Connected to " + server_name + "!")
-    else:
-        addToLog("System> Connection error.")
+    try:
+        conn = socket.socket()
+        conn.connect((server_ip, server_port))
+        conn.send(("0" + username).encode("utf-8"))
+        data = conn.recv(1024)
+        if not data:
+            addToLog("System> Connection failed!")
+        elif data == "Ban":
+            addToLog("Server> Your IP was banned from this server.")
+        else:
+            server_name = data.decode("utf-8")
+            addToLog("Server> " + "Connected to " + server_name + ".")
+            is_connected = True
+    except:
+        addToLog("System> Connection failed!")
+    conn.close()
 
 def disconnect(*args):
     global is_connected
     global users
-    if not is_connected:
-        addToLog("System> Not connected.")
-        return
     conn = socket.socket()
     conn.connect((server_ip, server_port))
-    conn.send(json.dumps(["disconnect", username]).encode("utf-8"))
+    conn.send(("3" + username).encode("utf-8"))
+    if conn.recv(1024).decode("utf-8") == "Disconnected":
+        addToLog("Server> Disconnected.")
+        is_connected = False
+    else:
+        addToLog("Server> Error.")
     conn.close()
-    addToLog("System> Disconnected.")
-    is_connected = False
     users.delete(0, END)
     users.insert(END, "Not connected")
 
 def commandList(*args):
     addToLog("System> Avaliable commands: ")
     for cmd in command_list.keys():
-        addToLog("    /" + cmd)
+        addToLog("System>  /" + cmd)
 
 def setUsername(new_username):
     global username
@@ -245,14 +241,14 @@ if username != 'None': welcome_message = username + ',\n' + welcome_message
 log.insert(END, welcome_message) 
 users.insert(END, "Not connected")
 
-last_connection = time.time()
+start = time.time()
 WINDOW_EXISTS = True  # For the correct turn-off.
 while WINDOW_EXISTS:  # Mainloop.
     updateData()
     if is_connected:
         setStatus("Connected to " + server_name + " (" + server_ip + ":" + 
                   str(server_port) + ")  Ping: " + 
-                  str(int((time.time() - last_connection) * 1000)) + " ms.")
+                  str(int((time.time() - start) * 1000)) + " ms.")
     else:
         setStatus("Not connected")
     update()
