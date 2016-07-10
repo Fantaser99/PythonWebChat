@@ -13,6 +13,12 @@ def onClosing():
         if is_connected: disconnect()
         root.destroy()
         WINDOW_EXISTS = False  # For the correct turn-off
+
+def decodeText(encoded_bytes, key):
+    text = ""
+    for i in range(len(encoded_bytes)):
+        text += chr(encoded_bytes[i] ^ ord(key[i % len(key)]))
+    return text
         
 def updateUsers(active_users):
     global users
@@ -21,7 +27,7 @@ def updateUsers(active_users):
 
 def updateMessages(new_messages):
     for msg in new_messages: 
-        addToLog(msg)   
+        addToLog(decodeText(msg, cipher_key))   
 
 def updateColors(new_colors):
     global colors 
@@ -289,6 +295,7 @@ is_connected = False
 last_idx = -1
 username = config['DEFAULT']['username']
 username_color = config['DEFAULT']['username_color']
+cipher_key = config['DEFAULT']['cipher_key']
 stop_scan = False  # If it is true, the server scaning will stop.
 with open("saved_servers.txt") as ss: 
     saved_servers = json.loads(ss.read())

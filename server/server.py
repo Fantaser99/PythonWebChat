@@ -3,11 +3,17 @@ import json
 import os
 import configparser 
 
+def encodeText(text, key):
+    encoded_bytes = [0] * len(text)
+    for i in range(len(text)):
+        encoded_bytes[i] = ord(text[i]) ^ ord(key[i % len(key)])
+    return encoded_bytes
 
 config = configparser.ConfigParser()
 config.read("config.ini")
 server_port = int(config['DEFAULT']['default_port'])
 server_name = config['DEFAULT']['server_name']
+cipher_key = config['DEFAULT']['cipher_key']
 
 user_list = []
 with open("saved_data.txt") as fin:
@@ -37,7 +43,6 @@ show_connections       = True
 
 while True:
     conn, addr = sock.accept()
-    print(highlight_patterns)
     
     # All data, that this server receives, consists of a command and a value.
     # A command tells the server, what the client is sending and what he wants
@@ -51,14 +56,15 @@ while True:
             user_list.append(username)
             highlight_patterns.append(value)
             colors.append(username_color)
-            message_list.append("Server> " + username + " connected!")
+            message_list.append(encodeText("Server> " + username + 
+                                           " connected!", cipher_key))
             if show_connections:
                 print("Connected: \n      IP: " + addr[0] + 
                                                  "\nUsername: " + username + "\n")
     elif command == "send_message":
         if show_received_messages:
             print("Received a message:\n>" + addr[0] + "\n>" + value + "\n")
-        message_list.append(value)
+        message_list.append(encodeText(value, cipher_key))
     elif command == "update_data":
         last_idx = int(value)
         messages_to_send = []
@@ -68,7 +74,8 @@ while True:
         conn.send(json.dumps(send_data).encode("utf-8"))
     elif command == "disconnect":
         if value in user_list: user_list.pop(user_list.index(value))
-        message_list.append("Server> " + value + " disconnected.")
+        message_list.append(encodeText("Server> " + value + 
+                                       " disconnected.", cipher_key))
         if show_connections:
             print("Disconnected: \n      IP: " + addr[0] + 
                                                  "\nUsername: " + value + "\n")
