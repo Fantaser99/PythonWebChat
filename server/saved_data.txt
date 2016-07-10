@@ -1,1 +1,1 @@
-[[], ["red", "green", "blue", "#FFA500"], [["Server", "blue"], ["online", "green"], ["offline", "red"], ["1010200021", "#FFA500"]]]
+[[], ["red", "green", "blue", "#FFA500"], [["Server", "blue"], ["System", "red"], ["online", "green"], ["offline", "red"], ["1010200021", "#FFA500"]]]

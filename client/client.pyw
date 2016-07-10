@@ -216,7 +216,7 @@ def scanLocalServers(timeout):
     if not timeout: timeout = 1
     
     self_ip = socket.gethostbyname(socket.gethostname()).split('.')
-    addToLog("System> Scaning the saved servers...")
+    addToLog("System> Scaning the network...")
     addToLog("System> You can see the progress in the status bar below.")
     update() 
     
