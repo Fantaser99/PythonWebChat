@@ -141,7 +141,7 @@ def setUsername(new_username):
         addToLog("System> Disconnect first!")
         return
     addToLog("System> Username set: " + new_username)
-    username = new_username[:-2]
+    username = new_username
     config['DEFAULT']['username'] = username
     with open("config.ini", 'w') as fout: config.write(fout)
     fout.close()

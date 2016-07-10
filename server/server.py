@@ -41,6 +41,7 @@ while True:
         conn.send(server_name.encode("utf-8"))
         if value:
             user_list.append(value)
+            message_list.append("Server> " + value + " connected!")
             if show_new_users:
                 print("New user connected: \n      IP: " + addr[0] + 
                                             "\nUsername: " + value + "\n")
@@ -57,5 +58,6 @@ while True:
         conn.send(json.dumps(send_data).encode("utf-8"))
     elif command == "disconnect":
         if value in user_list: user_list.pop(user_list.index(value))
+        message_list.append("Server> " + value + " disconnected.")
     
     conn.close()
