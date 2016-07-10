@@ -15,8 +15,11 @@ class CustomText(Text):
     '''
     def __init__(self, *args, **kwargs):
         Text.__init__(self, *args, **kwargs)
+
+    def addColorTag(self, name, foreground, background="white"):
+        log.tag_config(name, foreground=foreground, background=background)    
     
-    def highlight_pattern(self, pattern, tag, start="1.0", end="end",
+    def highlightPattern(self, pattern, tag, start="1.0", end="end",
                           regexp=False):
         '''Apply the given tag to all text that matches the given pattern
     

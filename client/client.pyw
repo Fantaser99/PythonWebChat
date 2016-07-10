@@ -24,6 +24,10 @@ def updateMessages(new_messages):
         addToLog(msg)   
     # TODO: nickname coloring
 
+def colorLog():
+    log.highlightPattern("online", "green")
+    log.highlightPattern("offline", "red")
+
 def updateData():
     global last_connection
     global is_connected
@@ -79,7 +83,7 @@ def checkCommand(*args):
     text = getText() + "  "
     if text[0] == '/':
         command = text[1:text.index(" ")]
-        value   = text[text.index(" ") + 1:]
+        value   = text[text.index(" ") + 1:].replace(' ', '')
         if command not in command_list.keys():
             addToLog("System> Unknown command. Type /command_list to see" +
                                     " avaliable commands.")
@@ -99,7 +103,6 @@ def connectToServer(addr):
         return
     if ":" not in addr: 
         addr += ":" + str(server_port)
-    addr = addr.replace(' ', '')
     ip = addr.split(":")
     server_ip = ip[0]
     server_port = int(ip[1])
@@ -143,80 +146,93 @@ def setUsername(new_username):
     with open("config.ini", 'w') as fout: config.write(fout)
     fout.close()
 
-def scanServers(timeout):
-    global saved_servers
-    global config
+def scanSavedServers(timeout):
     global stop_scan
     stop_scan = False
+    if not timeout: timeout = 1
+    
     self_ip = socket.gethostbyname(socket.gethostname()).split('.')
-    addToLog("System> Scaning the network for avaliable servers...")
+    addToLog("System> Scaning the saved servers...")
     addToLog("System> You can see the progress in the status bar below.")
     update()
     
     progress_str = list("[=========================], Done: ")
-    i = -1
-    for s in saved_servers:
-        i += 1
-        prc = round(i / len(saved_servers) * 100)
-        progress_str[1:round(prc / 100 * 25) + 1] = "#" * round(prc / 100 * 25)
-        setStatus("Scaning saved servers: " + 
-                  ''.join(progress_str) + str(s) + " (" + str(prc) + "%)")        
-        self_ip[-1] = str(s)
-        str_ip = '.'.join(self_ip)
-        try:
-            conn = socket.socket()
-            conn.settimeout(float(timeout))
-            conn.connect((str_ip, server_port))
-            conn.send(b'0')
-            addToLog("  " + str_ip + " - " + conn.recv(4096).decode("utf-8"))
-            conn.close()
-        except:
-            pass     
-        update()
-    progress_str = list("[=========================], Done: ")
-    found_server = False    
-    for s in range(256):
+    for i, ip in enumerate(saved_servers):
         if stop_scan: 
             addToLog("System> Stopped.")
             break
-        if s in saved_servers: continue
-        prc = round(s / 255 * 100)
+        prc = round(i / len(saved_servers) * 100)
+        progress_str[1:round(prc / 100 * 25) + 1] = "#" * round(prc / 100 * 25)
+        setStatus("Scaning saved servers: " + 
+                  ''.join(progress_str) + str(i) + " (" + str(prc) + "%)")     
+        
+        response = checkServer((ip, server_port), '', float(timeout))
+        if response:
+            status = "online: " + response.decode("utf-8")
+        else:
+            status = "offline"
+        addToLog(ip + ":" + str(server_port) + " - " + status)
+        colorLog()
+        update()
+
+def scanLocalServers(timeout): 
+    global stop_scan
+    global saved_servers
+    stop_scan = False
+    if not timeout: timeout = 1
+    
+    self_ip = socket.gethostbyname(socket.gethostname()).split('.')
+    addToLog("System> Scaning the saved servers...")
+    addToLog("System> You can see the progress in the status bar below.")
+    update() 
+    
+    progress_str = list("[=========================], Done: ")
+    found_server = False    
+    for ip in range(256):
+        if stop_scan: 
+            addToLog("System> Stopped.")
+            break
+        prc = round(ip / 255 * 100)
         progress_str[round(prc / 100 * 25) + 1] = "#"
         setStatus("Scaning the network: " + 
-                  ''.join(progress_str) + str(s) + " (" + str(prc) + "%)")
+                  ''.join(progress_str) + str(ip) + " (" + str(prc) + "%)")
         
-        self_ip[-1] = str(s)
-        str_ip = '.'.join(self_ip)
-        try:
-            conn = socket.socket()
-            conn.settimeout(float(timeout))
-            conn.connect((str_ip, server_port))
-            conn.send(b'0')
-            addToLog("  " + str_ip + " - " + conn.recv(4096).decode("utf-8"))
-            conn.close()
-            if i not in saved_servers:
-                saved_servers.add(i)
-                found_server = True
-        except:
-            pass
-        if found_server:
-            u_list = list(saved_servers)
-            config['SAVED DATA']['saved_servers'] = json.dumps(u_list)
-            with open("config.ini", 'w') as fout: config.write(fout)
-            fout.close()
+        self_ip[-1] = str(ip)       # e.g. ['192', '168', '1', str(ip)]
+        str_ip = '.'.join(self_ip)  # ---> '192.168.1.1'
+        response = checkServer((str_ip, server_port), '', float(timeout))
+        if response:
+            saved_servers.append(str_ip)
+            found_server = True
+            status = "online: " + response.decode("utf-8")
+            addToLog(str_ip + ":" + str(server_port) + " - " + status)
+        colorLog()
         update()      
+    if found_server:
+        with open("saved_servers.txt", 'w') as ss:
+            ss.write(json.dumps(saved_servers))   
 
 def stopScan(*args):
     global stop_scan
     stop_scan = True
+
+def clearSavedServers(*args):
+    with open("saved_servers.txt", 'w') as ss: ss.write("[]")
+    addToLog("System> Cleared saved servers.")
+
+def savedServersList(*args):
+    addToLog("System> Saved servers: (type /scan_saved_servers to check them)")
+    for s in saved_servers: addToLog("  " + s)
         
 command_list = {
-    "connect"      : connectToServer,
-    "disconnect"   : disconnect,
-    "command_list" : commandList,
-    "set_username" : setUsername,
-    "scan_servers" : scanServers,
-    "stop_scan"    : stopScan
+    "connect"             : connectToServer,
+    "disconnect"          : disconnect,
+    "command_list"        : commandList,
+    "set_username"        : setUsername,
+    "scan_saved_servers"  : scanSavedServers,
+    "scan_local_servers"  : scanLocalServers,
+    "stop_scan"           : stopScan,
+    "clear_saved_servers" : clearSavedServers,
+    "saved_servers_list"  : savedServersList
     }
 #COMMANDS_END------------------------------------------------------COMMANDS_END#
 
@@ -229,6 +245,9 @@ message_button.config(command=checkCommand)
 config = configparser.ConfigParser()
 config.read('config.ini')
 
+log.addColorTag("red", "red")
+log.addColorTag("green", "green")
+
 server_ip = "localhost"
 server_port = int(config['DEFAULT']['default_port'])
 server_name = ""
@@ -236,7 +255,8 @@ is_connected = False
 last_idx = -1
 username = config['DEFAULT']['username']
 stop_scan = False  # If it is true, the server scaning will stop.
-saved_servers = set(json.loads(config['SAVED DATA']['saved_servers']))
+with open("saved_servers.txt") as ss: 
+    saved_servers = json.loads(ss.read())
  
 welcome_message = '''  Welcome to Fullmetal Chat v0.0!
   Type /connect [ip]:[port] to connect to a chat room.
@@ -255,6 +275,7 @@ while WINDOW_EXISTS:  # Mainloop.
                   str(int((time.time() - last_connection) * 1000)) + " ms.")
     else:
         setStatus("Not connected")
+    colorLog()
     update()
 
 # root.mainloop() doesn't work, so we need to update the window
