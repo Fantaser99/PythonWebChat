@@ -49,7 +49,7 @@ def addToLog(text):
     log.insert(END, str(text) + "\n")
 
 def update():
-    time.sleep(1 / 60)
+    time.sleep(1 / 20)
     root.update()   
 
 def getText(*args):

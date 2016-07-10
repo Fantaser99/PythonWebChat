@@ -50,29 +50,29 @@ def updateData():
     last_connection = time.time()
     if not is_connected:
         return
-    #try:  # Checking, if the client can get response from the server.
-    conn = socket.socket()
-    conn.connect((server_ip, server_port))
-    
-    send_data = ["update_data", last_idx]
-    conn.send(json.dumps(send_data).encode("utf-8"))
-    
-    rec_data = json.loads(conn.recv(16384).decode("utf-8"))
-    conn.close()
-    
-    new_messages = rec_data[0]
-    active_users = rec_data[1]
-    new_colors   = rec_data[2]
-    new_patterns = rec_data[3]
-    last_idx += len(new_messages)
-    
-    updateUsers(active_users)       
-    updateColors(new_colors)  
-    updatePatterns(new_patterns)
-    updateMessages(new_messages)    
-    #except:  # If he can't, he disconnects.
-    #    is_connected = False
-    #    addToLog("System> You were disconnected.")
+    try:  # Checking, if the client can get response from the server.
+        conn = socket.socket()
+        conn.connect((server_ip, server_port))
+        
+        send_data = ["update_data", last_idx]
+        conn.send(json.dumps(send_data).encode("utf-8"))
+        
+        rec_data = json.loads(conn.recv(16384).decode("utf-8"))
+        conn.close()
+        
+        new_messages = rec_data[0]
+        active_users = rec_data[1]
+        new_colors   = rec_data[2]
+        new_patterns = rec_data[3]
+        last_idx += len(new_messages)
+        
+        updateUsers(active_users)       
+        updateColors(new_colors)  
+        updatePatterns(new_patterns)
+        updateMessages(new_messages)    
+    except:  # If he can't, he disconnects.
+        is_connected = False
+        addToLog("System> You were disconnected.")
 
 def sendMessage(message):    
     if not is_connected:
@@ -85,7 +85,7 @@ def sendMessage(message):
     conn.close()
     return
 
-def checkServer(addr, value='', timeout=999):
+def checkServer(addr, value='', timeout=5):
     try:
         conn = socket.socket()
         conn.settimeout(timeout)
@@ -171,6 +171,9 @@ def setUsernameColor(new_color):
     if is_connected:
         addToLog("System> Disconnect first!")
         return    
+    if new_color[0] != "#" or len(new_color) != 7:
+        addToLog("System> Wrong color.")
+        return
     addToLog("System> Username color set: " + new_color)
     addToLog("System> Reconnect or relog to update it.")
     username_color = new_color
@@ -303,6 +306,7 @@ with open("saved_servers.txt") as ss:
 colors = []
 updateColors(["blue", "red", "green", username_color])  # Sort of duct tape here.
 highlight_patterns = [["Server", "blue"],
+                      ["System", "red"],
                       ["online", "green"],
                       ["offline", "red"],
                       [username, username_color]]
