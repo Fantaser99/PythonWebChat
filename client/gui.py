@@ -59,6 +59,20 @@ def getText(*args):
 
 root = Tk()
 
+menubar = Menu(root)
+
+# Setting menu
+
+filemenu = Menu(menubar, tearoff=0)
+filemenu.add_command(label="Exit", command=root.destroy)
+
+commandsmenu = Menu(menubar, tearoff=0)
+
+menubar.add_cascade(label="File", menu=filemenu)
+menubar.add_cascade(label="Commands", menu=commandsmenu)
+
+root.config(menu=menubar)
+
 WIDTH = 15  # Divisible by 15.
 
 log = CustomText(root)

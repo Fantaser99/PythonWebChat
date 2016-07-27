@@ -1,5 +1,4 @@
 from tkinter import *
-from gui import *
 import datetime
 import time
 import socket
@@ -70,6 +69,8 @@ def updateData():
         updateColors(new_colors)  
         updatePatterns(new_patterns)
         updateMessages(new_messages)    
+
+        #TODO: Add optional notification sound on new messages.
     except:  # If he can't, he disconnects.
         is_connected = False
         addToLog("System> You were disconnected.")
@@ -282,6 +283,11 @@ command_list = {
     }
 #COMMANDS_END------------------------------------------------------COMMANDS_END#
 
+
+from gui import *
+
+for name, func in command_list.items():
+    commandsmenu.add_command(label=name, command=func)
 
 root.wm_title("Python Chat")
 root.protocol("WM_DELETE_WINDOW", onClosing)
